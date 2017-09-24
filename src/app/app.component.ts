@@ -3,18 +3,26 @@ import { FormControl } from '@angular/forms';
 import { Apollo, ApolloQueryObservable } from 'apollo-angular';
 import { Subject } from 'rxjs/Subject';
 import { DocumentNode } from 'graphql';
+import { ApolloClient, createNetworkInterface } from 'apollo-client';
+import gql from 'graphql-tag';
 
 import 'rxjs/add/operator/debounceTime';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/take';
 
 import { AddUserMutation, UsersQuery } from '../graphql/frontend.api.schema';
-const UsersQueryNode: DocumentNode = require('graphql-tag/loader!../graphql/Users.graphql');
-const AddUserMutationNode: DocumentNode = require('graphql-tag/loader!../graphql/AddUser.graphql');
+import { provideApollo  } from '../apollo/Apollo';
+
+export const apolloClient = new ApolloClient({
+  networkInterface: createNetworkInterface({
+    uri: 'http://localhost:3000'
+  })
+});
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
+  providers: [provideApollo]
 })
 export class AppComponent implements OnInit, AfterViewInit {
   // Observable with GraphQL result
@@ -31,10 +39,11 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apollo = apollo;
   }
 
+
   public ngOnInit() {
     // Query users data with observable variables
     this.users = this.apollo.watchQuery<UsersQuery>({
-      query: UsersQueryNode,
+      query: gql(`require(../graphql/Users.graphql`),
       variables: {
         name: this.nameFilter,
       },
@@ -56,7 +65,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   public newUser(firstName: string) {
     // Call the mutation called addUser
     this.apollo.mutate<AddUserMutation>({
-      mutation: AddUserMutationNode,
+      mutation: gql(`require(../graphql/AddUser.graphql`),
       variables: {
         firstName,
         lastName: this.lastName,
