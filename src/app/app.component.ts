@@ -5,24 +5,18 @@ import { Subject } from 'rxjs/Subject';
 import { DocumentNode } from 'graphql';
 import { ApolloClient, createNetworkInterface } from 'apollo-client';
 import gql from 'graphql-tag';
+import { ServerQueries } from '../graphql/server.queries'
+import { User } from '../../../common/user.model';
 
 import 'rxjs/add/operator/debounceTime';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/take';
 
 import { AddUserMutation, UsersQuery } from '../graphql/frontend.api.schema';
-import { provideApollo  } from '../apollo/Apollo';
-
-export const apolloClient = new ApolloClient({
-  networkInterface: createNetworkInterface({
-    uri: 'http://localhost:3000'
-  })
-});
 
 @Component({
   selector: 'app-root',
-  templateUrl: 'app.component.html',
-  providers: [provideApollo]
+  templateUrl: 'app.component.html'
 })
 export class AppComponent implements OnInit, AfterViewInit {
   // Observable with GraphQL result
@@ -39,11 +33,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apollo = apollo;
   }
 
-
   public ngOnInit() {
     // Query users data with observable variables
     this.users = this.apollo.watchQuery<UsersQuery>({
-      query: gql(`require(../graphql/Users.graphql`),
+      query: ServerQueries.GetAllUsers(),
       variables: {
         name: this.nameFilter,
       },
@@ -63,25 +56,20 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   public newUser(firstName: string) {
+    let user = new User(firstName, "", "", "", "USA", "TAMU", "1");
     // Call the mutation called addUser
     this.apollo.mutate<AddUserMutation>({
-      mutation: gql(`require(../graphql/AddUser.graphql`),
+      mutation: ServerQueries.AddUser(user),
       variables: {
         firstName,
         lastName: this.lastName,
       },
     })
-      .take(1)
-      .subscribe({
-        next: ({data}) => {
-          console.log('got a new user', data.addUser);
-
-          // get new data
-          this.users.refetch();
-        },
-        error: (errors) => {
-          console.log('there was an error sending the query', errors);
+    .subscribe(
+        (user) => {
+          let data = user.data.addUser;
+          console.log('got a new user', data.firstName + data.lastName);
         }
-      });
+      );
   }
 }
